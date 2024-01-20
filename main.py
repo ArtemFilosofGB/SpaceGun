@@ -1,7 +1,20 @@
 import pygame as py
 from random import randint
 
+py.mixer.pre_init(44100, -16, 1, 512)  # инициализация до py.init()
 py.init()
+
+
+
+laser_sound = py.mixer.Sound("sounds/laser_gun.wav")
+laser_sound.set_volume(0.05)
+
+shot_sound = py.mixer.Sound("sounds/shot.wav")
+shot_sound.set_volume(0.5)
+
+move_sound = py.mixer.Sound("sounds/move.wav")
+move_sound.set_volume(0.5)
+#move_sound.fadeout(500)
 
 WIDTH, HEIGHT = 800, 600
 FPS = 60
@@ -37,13 +50,15 @@ class Bullet:
 
 class Target:
     def __init__(self):
+        global scores
         self.px = randint(0, WIDTH-30)
         self.py = randint(0, 10)
-        self.speed = 1+randint(0, 5)
+        self.speed = 1+randint(0, 5)+scores/10
         self.rect = py.Rect(self.px, self.py, 30, 30)
         targets.append(self)
 
     def update(self):
+        global scores
         self.py += self.speed
         self.rect.y = self.py
         if self.rect.top > HEIGHT:
@@ -104,11 +119,14 @@ class Gun:
         global mousePX
         global play
         self.px += (mousePX - self.px) / 10
-        # gun.px += (mousePX - gun.px) / 10
+        if (self.px - mousePX)/10>10:
+            move_sound.play()
+
         for target in targets:
             if target.rect.collidepoint(gun.px, gun.py):
                 targets.remove(target)
                 gun.life -= 1
+                shot_sound.play()
         if gun.life == 0:
             play = False
 
@@ -134,6 +152,9 @@ while play:
         if event.type == py.QUIT:
             play = False
 
+
+
+
     # создание мыши
     mousePX, mousePY = py.mouse.get_pos()
     # кнопки мыши
@@ -145,7 +166,16 @@ while play:
 
 
     if timer>0 and timer<10:
-        if b1:b = Bullet(gun.px, gun.py, 10)
+        if b1:
+            b = Bullet(gun.px, gun.py, 10)
+            laser_sound.play()
+        #плавное смещение цели увеличение сложности
+        if scores > 3:
+            for target in targets:
+                if target.rect.y > HEIGHT // 2 and (target.rect.x - gun.px)>30:
+                    target.rect.x -= (target.rect.x - gun.px) // scores // 10
+                else:
+                    target.rect.x += (gun.px - target.rect.x) / 30
 
     if timer>0:
         timer-=1 #счётчик времени
