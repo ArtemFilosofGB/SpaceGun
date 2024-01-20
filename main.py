@@ -39,7 +39,7 @@ class Target:
     def __init__(self):
         self.px = randint(0, WIDTH-30)
         self.py = randint(0, 10)
-        self.speed = 2
+        self.speed = 1+randint(0, 5)
         self.rect = py.Rect(self.px, self.py, 30, 30)
         targets.append(self)
 
@@ -48,10 +48,7 @@ class Target:
         self.rect.y = self.py
         if self.rect.top > HEIGHT:
             targets.remove(self)
-        for target in targets:
-            if target.rect.collidepoint(gun.px, gun.py):
-                targets.remove(target)
-                print("hit")
+
 
     def draw(self):
         py.draw.rect(window, py.Color("Green"), self.rect)
@@ -100,11 +97,20 @@ class Gun:
     def __init__(self, gunPX):
         self.px = gunPX
         self.py = HEIGHT - 30
+        self.life = 3
         self.rect = py.Rect(self.px-20, self.py, 40, 20)
 
     def update(self):
         global mousePX
-        self.px = mousePX
+        global play
+        self.px += (mousePX - self.px) / 10
+        # gun.px += (mousePX - gun.px) / 10
+        for target in targets:
+            if target.rect.collidepoint(gun.px, gun.py):
+                targets.remove(target)
+                gun.life -= 1
+        if gun.life == 0:
+            play = False
 
     def draw(self):
         py.draw.rect(window, py.Color("Blue"), (self.px-20, self.py, 40, 20))
@@ -118,6 +124,7 @@ targets = []
 skys = [] # Звёздное небо
 stars = [] # Звейзды
 bc=0 #backgroung correction
+
 
 timer=60
 scores=0
@@ -133,7 +140,8 @@ while play:
     b1, b2, b3 = py.mouse.get_pressed()
 
     # плавное смещение пушки
-    gun.px += (mousePX - gun.px) / 10
+    #gun.px += (mousePX - gun.px) / 10
+    gun.update()
 
 
     if timer>0 and timer<10:
@@ -170,7 +178,9 @@ while play:
 
     # отрисовка счета
     text=font.render(f"Score: {scores}", True, py.Color("white"))
+    text_life=font.render(f"Life: {gun.life}", True, py.Color("white"))
     window.blit(text, (10, 10))
+    window.blit(text_life, (10, 30))
     py.display.update()
     clock.tick(FPS)
 py.quit()
